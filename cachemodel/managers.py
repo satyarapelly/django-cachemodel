@@ -6,7 +6,7 @@ from cachemodel.utils import generate_cache_key
 
 class CacheModelManager(models.Manager):
     def get(self, **kwargs):
-        key = generate_cache_key([self.model.__class__.__name__, "get"], **kwargs)
+        key = generate_cache_key([self.model.__name__, "get"], **kwargs)
         obj = cache.get(key)
         if obj is None:
             obj = super(CacheModelManager, self).get(**kwargs)

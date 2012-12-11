@@ -16,7 +16,10 @@ from django.core.cache import cache
 from django.db import models
 
 
-CACHE_FOREVER_TIMEOUT=86400*365
+from cachemodel import CACHE_FOREVER_TIMEOUT
+from cachemodel.managers import CacheModelManager
+from cachemodel.decorators import find_fields_decorated_with
+from cachemodel.utils import generate_cache_key
 
 
 
@@ -30,25 +33,23 @@ class CacheModel(models.Model):
 
     def save(self, *args, **kwargs):
         #find all the denormalized fields and update them
-        for method in find_fields_decorated_with(self, '_denormalized_field'):
-            if hasattr(method, '_denormalized_field_name'):
-                setattr(self, method._denormalized_field_name, method(self))
+        self.denormalize()
 
         # save ourselves to the database
         super(CacheModel, self).save(*args, **kwargs)
 
         # trigger cache publish
-        self._real_publish()
+        self.publish()
 
     # def delete(self, *args, **kwargs):
     #     super(CacheModel, self).delete(*args, **kwargs)
     #     # trigger publish if we are deleted.
     #     self.publish()
 
-    def _real_publish(self):
+
+    def publish(self):
         # cache ourselves so that we're ready for .cached.get(pk=)
-        key = generate_cache_key([self.__class__.__name__, "get"], pk=self.pk)
-        cache.set(key, self, CACHE_FOREVER_TIMEOUT)
+        self.publish_by('pk')
 
         # find any @cached_methods with auto_publish=True
         for method in find_fields_decorated_with(self, '_cached_method'):
@@ -63,13 +64,15 @@ class CacheModel(models.Model):
                 # the @cached_method requires arguments, so we cant cache it automatically
                 pass
 
-        # call user hook
-        self.publish()
+    def publish_by(self, *args):
+        # cache ourselves, keyed by the fields given
+        kwargs = {}
+        for field in args:
+            kwargs[field] = getattr(self, field)
+        key = generate_cache_key([self.__class__.__name__, "get"], **kwargs)
+        cache.set(key, self, CACHE_FOREVER_TIMEOUT)
 
-    def publish(self):
-        """User hook to publish to the cache"""
-        pass
-
-
-
-
+    def denormalize(self):
+        for method in find_fields_decorated_with(self, '_denormalized_field'):
+            if hasattr(method, '_denormalized_field_name'):
+                setattr(self, method._denormalized_field_name, method(self))

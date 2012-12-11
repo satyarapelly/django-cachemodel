@@ -2,6 +2,7 @@ from django.core.cache import cache
 from functools import wraps
 
 from cachemodel import CACHE_FOREVER_TIMEOUT
+from cachemodel.utils import generate_cache_key
 
 def cached_method(auto_publish=False):
     """A decorator for CacheModel methods."""
