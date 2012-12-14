@@ -58,6 +58,7 @@ class CacheModel(models.Model):
             try:
                 # run the cached method and store it in cache
                 key = generate_cache_key([self.__class__.__name__, method.__name__])
+                cache.delete(key) # FIXME: wont this create a thundering herd race?
                 value = method(self)
                 cache.set(key, value, CACHE_FOREVER_TIMEOUT)
             except TypeError as e:
