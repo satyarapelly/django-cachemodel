@@ -17,6 +17,7 @@ def cached_method(auto_publish=False):
             return data
         wrapper._cached_method = True
         wrapper._cached_method_auto_publish = auto_publish
+        wrapper._cached_method_target = target
         return wrapper
 
     if callable(auto_publish):

@@ -57,10 +57,7 @@ class CacheModel(models.Model):
                 continue
             try:
                 # run the cached method and store it in cache
-                key = generate_cache_key([self.__class__.__name__, method.__name__])
-                cache.delete(key) # FIXME: wont this create a thundering herd race?
-                value = method(self)
-                cache.set(key, value, CACHE_FOREVER_TIMEOUT)
+                self.publish_method(method.__name__)
             except TypeError as e:
                 # the @cached_method requires arguments, so we cant cache it automatically
                 pass
@@ -77,3 +74,15 @@ class CacheModel(models.Model):
         for method in find_fields_decorated_with(self, '_denormalized_field'):
             if hasattr(method, '_denormalized_field_name'):
                 setattr(self, method._denormalized_field_name, method(self))
+
+    def publish_method(self, method_name, *args, **kwargs):
+        method = getattr(self, method_name, None)
+        if not getattr(method, '_cached_method', False):
+            raise AttributeError("method '%s' is not a cached_method.");
+        target = getattr(method, '_cached_method_target', None)
+        if callable(target):
+            key = generate_cache_key([self.__class__.__name__, target.__name__], *args, **kwargs)
+            data = target(self, *args, **kwargs)
+            cache.set(key, data, CACHE_FOREVER_TIMEOUT)
+
+
