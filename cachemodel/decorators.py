@@ -9,7 +9,7 @@ def cached_method(auto_publish=False):
     def decorator(target):
         @wraps(target)
         def wrapper(self, *args, **kwargs):
-            key = generate_cache_key([self.__class__.__name__, target.__name__], *args, **kwargs)
+            key = generate_cache_key([self.__class__.__name__, target.__name__, self.pk], *args, **kwargs)
             data = cache.get(key)
             if data is None:
                 data = target(self, *args, **kwargs)

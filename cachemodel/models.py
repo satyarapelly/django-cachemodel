@@ -81,7 +81,7 @@ class CacheModel(models.Model):
             raise AttributeError("method '%s' is not a cached_method.");
         target = getattr(method, '_cached_method_target', None)
         if callable(target):
-            key = generate_cache_key([self.__class__.__name__, target.__name__], *args, **kwargs)
+            key = generate_cache_key([self.__class__.__name__, target.__name__, self.pk], *args, **kwargs)
             data = target(self, *args, **kwargs)
             cache.set(key, data, CACHE_FOREVER_TIMEOUT)
 

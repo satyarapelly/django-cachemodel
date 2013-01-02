@@ -7,5 +7,5 @@ def generate_cache_key(prefix, *args, **kwargs):
     key_str = "%s::%s" % (arg_str, kwarg_str)
     argkwarg_str = md5(key_str).hexdigest()
     if not isinstance(prefix, basestring):
-        prefix = "_".join(prefix)
+        prefix = "_".join(str(a) for a in prefix)
     return "%s__%s" % (prefix, argkwarg_str)
