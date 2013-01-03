@@ -12,7 +12,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        # 'NAME': '/tmp/local.sqlite3',                      # Or path to database file if using sqlite3.
+        'NAME': '/tmp/local.sqlite3',                      # Or path to database file if using sqlite3.
         # 'USER': '',                      # Not used with sqlite3.
         # 'PASSWORD': '',                  # Not used with sqlite3.
         # 'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -127,9 +127,17 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 
+    'djcelery',
+    'kombu.transport.django',
+
     'test_project',
     'cachemodel',
 )
+
+import djcelery
+djcelery.setup_loader()
+BROKER_URL = 'django://'
+CACHEMODEL_ASYNC_PUBLISH = True
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

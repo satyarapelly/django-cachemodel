@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import models
 
@@ -20,6 +21,23 @@ from cachemodel import CACHE_FOREVER_TIMEOUT
 from cachemodel.managers import CacheModelManager, CachedTableManager
 from cachemodel.decorators import find_fields_decorated_with
 from cachemodel.utils import generate_cache_key
+
+
+def _async_publish(model_class, pk):
+    if not isinstance(model_class, CacheModel):
+        return
+    obj = model_class.cached.get(pk)
+    obj.publish()
+
+_use_async_publish = getattr(settings, 'CACHEMODEL_ASYNC_PUBLISH', False)
+
+if _use_async_publish:
+    try:
+        import celery
+        _async_publish = celery.task(_async_publish)
+    except ImportError:
+        _use_async_publish = False
+
 
 
 
@@ -39,7 +57,10 @@ class CacheModel(models.Model):
         super(CacheModel, self).save(*args, **kwargs)
 
         # trigger cache publish
-        self.publish()
+        if _use_async_publish:
+            _async_publish.delay(self.__class__, self.pk)
+        else:
+            self.publish()
 
     # def delete(self, *args, **kwargs):
     #     super(CacheModel, self).delete(*args, **kwargs)
