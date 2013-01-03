@@ -19,3 +19,46 @@ class CacheModelManager(models.Manager):
         raise DeprecationWarning("get_by() has been deprecated, use .get() instead.")
         raise NotImplementedError
 
+class CachedTableManager(models.Manager):
+    def _pk_field_name(self):
+        for field in self.model._meta.fields:
+            if field.primary_key:
+                return field.name
+
+    def _rebuild_indices(self):
+        for field in self.model._meta.fields:
+            if field.primary_key or field.db_index:
+                self._rebuild_index(field.name)
+
+    def _rebuild_index(self, field_name):
+        cache_key = generate_cache_key([self.model.__name__, "table"], field_name)
+        table = {}
+        for obj in super(CachedTableManager, self).all().select_related():
+            key = getattr(obj, field_name, None)
+            if key is not None:
+                table[key] = obj
+        cache.set(cache_key, table, CACHE_FOREVER_TIMEOUT);
+        return table
+
+    def _fetch_index(self, field_name):
+        cache_key = generate_cache_key([self.model.__name__, "table"], field_name)
+        table = cache.get(cache_key)
+        if table is None:
+            table = self._rebuild_index(field_name)
+        return table
+
+    def get(self, **kwargs):
+        if len(kwargs.keys()) > 1:
+            raise NotImplementedError("Multiple indeices are not supported on CachedTable.")
+
+        field, value = kwargs.items()[0]
+        if field == 'pk':
+            field = self._pk_field_name()
+        table = self._fetch_index(field)
+        if value not in table:
+            raise self.model.DoesNotExist
+        return table[value]
+
+    def all(self):
+        table = self._fetch_index(self._pk_field_name())
+        return table.values()

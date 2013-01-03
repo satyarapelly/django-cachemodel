@@ -6,9 +6,11 @@ import datetime
 
 
 
-# class Category(cachemodel.CachedTable):
-#     slug = models.SlugField()
-#     name = models.TextField()
+class Category(cachemodel.CachedTable):
+    slug = models.SlugField()
+    name = models.TextField()
+
+    cached = cachemodel.CachedTableManager()
 
 
 

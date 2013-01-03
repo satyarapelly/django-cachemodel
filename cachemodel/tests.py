@@ -17,6 +17,7 @@ class CacheModelTestCase(TestCase):
         Post.objects.all().delete()
         Author.objects.all().delete()
         User.objects.all().delete()
+        Category.objects.all().delete()
         cache.clear()
 
     def test_auto_publish_by_pk(self):
@@ -103,6 +104,32 @@ class CacheModelTestCase(TestCase):
 
         with self.assertNumQueries(0):
             self.assertEqual(1, author.num_posts())
+
+    def test_cached_table(self):
+        """Verify that a CachedTable does not generate any queries on .get() lookups"""
+        for name in ('Foo', 'Bar', 'Baz', 'Quuz'):
+            Category(name=name, slug=name.lower()).save()
+
+        with self.assertNumQueries(0):
+            cats = Category.cached.all()
+            foo = Category.cached.get(slug='foo')
+            bar = Category.cached.get(id=2)
+            baz = Category.cached.get(pk=3)
+
+
+    def test_cached_table_save_updates_indices(self):
+        """Ensure that a save on a CachedTable updates the indexes"""
+        for name in ('Foo', 'Bar', 'Baz', 'Quuz'):
+            Category(name=name, slug=name.lower()).save()
+        Category.cached.all()
+
+        foo = Category.cached.get(slug='foo')
+        new_name = 'Foobar'
+        foo.name = new_name
+        foo.save()
+        with self.assertNumQueries(0):
+            new_foo = Category.cached.get(slug='foo')
+            self.assertEqual(new_foo.name, new_name)
 
 
 

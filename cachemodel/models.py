@@ -17,7 +17,7 @@ from django.db import models
 
 
 from cachemodel import CACHE_FOREVER_TIMEOUT
-from cachemodel.managers import CacheModelManager
+from cachemodel.managers import CacheModelManager, CachedTableManager
 from cachemodel.decorators import find_fields_decorated_with
 from cachemodel.utils import generate_cache_key
 
@@ -86,3 +86,14 @@ class CacheModel(models.Model):
             cache.set(key, data, CACHE_FOREVER_TIMEOUT)
 
 
+class CachedTable(models.Model):
+    objects = models.Manager()
+    cached = CachedTableManager()
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        ret = super(CachedTable, self).save(*args, **kwargs)
+        self.__class__.cached._rebuild_indices()
+        return ret
