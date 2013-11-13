@@ -1,9 +1,12 @@
 from setuptools import setup, find_packages
-import cachemodel
+import os
+
+execfile(os.path.join(os.path.dirname(__file__), 'cachemodel/version.py'))
+
 
 setup(
     name='django-cachemodel',
-    version=".".join(map(str, cachemodel.VERSION)),
+    version=".".join(map(str, VERSION)),
     packages = find_packages(),
 
     author = 'Concentric Sky',
