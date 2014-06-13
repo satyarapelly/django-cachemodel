@@ -49,7 +49,7 @@ class CachedTableManager(models.Manager):
 
     def get(self, **kwargs):
         if len(kwargs.keys()) > 1:
-            raise NotImplementedError("Multiple indeices are not supported on CachedTable.")
+            raise NotImplementedError("Multiple indices are not supported on CachedTable.")
 
         field, value = kwargs.items()[0]
         if field == 'pk':
