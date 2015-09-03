@@ -15,6 +15,14 @@ class CacheModelManager(models.Manager):
             # update cache_key_index with obj.pk <- key
         return obj
 
+    def get_or_create(self, **kwargs):
+        key = generate_cache_key([self.model.__name__, "get"], **kwargs)
+        obj = cache.get(key)
+        if obj is None:
+            return super(CacheModelManager, self).get_or_create(**kwargs)
+        else:
+            return obj, False
+
     def get_by(self, *args, **kwargs):
         raise DeprecationWarning("get_by() has been deprecated, use .get() instead.")
         raise NotImplementedError

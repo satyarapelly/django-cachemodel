@@ -1,0 +1,6 @@
+*.pyc
+.*.sw*
+.idea/
+build/
+dist/
+*.egg*
