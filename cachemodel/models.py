@@ -41,11 +41,9 @@ class CacheModel(models.Model):
         # trigger cache publish
         self.publish()
 
-    # def delete(self, *args, **kwargs):
-    #     super(CacheModel, self).delete(*args, **kwargs)
-    #     # trigger publish if we are deleted.
-    #     self.publish()
-
+    def delete(self, *args, **kwargs):
+        super(CacheModel, self).delete(*args, **kwargs)
+        cache.delete(self.publish_key("pk"))
 
     def publish(self):
         # cache ourselves so that we're ready for .cached.get(pk=)
@@ -62,13 +60,19 @@ class CacheModel(models.Model):
                 # the @cached_method requires arguments, so we cant cache it automatically
                 pass
 
-    def publish_by(self, *args):
-        # cache ourselves, keyed by the fields given
+    def publish_key(self, *args):
         kwargs = {}
         for field in args:
             kwargs[field] = getattr(self, field)
-        key = generate_cache_key([self.__class__.__name__, "get"], **kwargs)
+        return generate_cache_key([self.__class__.__name__, "get"], **kwargs)
+
+    def publish_by(self, *args):
+        # cache ourselves, keyed by the fields given
+        key = self.publish_key(*args)
         cache.set(key, self, CACHE_FOREVER_TIMEOUT)
+
+    def publish_delete(self, *args):
+        cache.delete(self.publish_key(*args))
 
     def denormalize(self):
         for method in find_fields_decorated_with(self, '_denormalized_field'):
