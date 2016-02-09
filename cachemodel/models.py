@@ -42,8 +42,8 @@ class CacheModel(models.Model):
         self.publish()
 
     def delete(self, *args, **kwargs):
+        self.publish_delete("pk")
         super(CacheModel, self).delete(*args, **kwargs)
-        cache.delete(self.publish_key("pk"))
 
     def publish(self):
         # cache ourselves so that we're ready for .cached.get(pk=)
